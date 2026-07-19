@@ -1,46 +1,69 @@
 # mcp-insta
 
-Локальный MCP-сервер для Windows, который подключает один профессиональный Instagram Creator/Business аккаунт к AI-клиенту через Meta Graph API.
+Локальный MCP-сервер для Windows, который безопасно подключает один профессиональный Instagram Creator/Business аккаунт к AI-клиенту через Meta Graph API.
 
-Сервер хранит App ID, App Secret и access tokens только в Windows Credential Manager. В локальном SQLite остаются только идентификаторы привязанного аккаунта и Page — без токенов, cookie и текстов Direct.
+Он рассчитан на работу с одной заранее выбранной связкой Facebook Page → Instagram. Секреты и access token остаются в Windows Credential Manager; SQLite хранит только техническую привязку аккаунта и Page.
 
-## Возможности
+## Что умеет
 
-| Область | Инструменты | Статус |
+| Задача | MCP-инструменты | Режим |
 | --- | --- | --- |
-| Подключение | `insta_auth_start`, `insta_auth_complete`, `insta_auth_status`, `insta_diagnose` | Поддерживается |
-| Профиль и медиа | Профиль, список медиа, одно медиа | Только чтение |
-| Аналитика | Инсайты аккаунта и медиа | Только чтение |
-| Instagram Direct | Диалоги, сообщения и одно сообщение | Только чтение |
-| Ответ в Direct | `ig_direct_reply_prepare` → `ig_direct_reply_confirm` | Требует явного подтверждения |
-| Комментарии | Read-инструменты зарегистрированы | Пока недоступны |
+| Подключить аккаунт и проверить доступ | `insta_auth_start`, `insta_auth_complete`, `insta_auth_status`, `insta_diagnose` | OAuth с PKCE |
+| Читать профиль и медиа | `ig_get_profile`, `ig_get_media_list`, `ig_get_media` | Только чтение |
+| Читать аналитику | `ig_get_account_insights`, `ig_get_media_insights` | Только чтение |
+| Читать Instagram Direct | `ig_get_conversations`, `ig_get_messages`, `ig_get_message` | Только чтение |
+| Ответить в Direct | `ig_direct_reply_prepare` → `ig_direct_reply_confirm` | Только после явного подтверждения |
+| Читать комментарии | `ig_get_comments`, `ig_get_comment`, `ig_get_replies` | Зарегистрировано, но намеренно недоступно в этой поставке |
 
-`ig_direct_reply_prepare` ничего не отправляет. Единственная операция записи — отдельный вызов `ig_direct_reply_confirm` с одноразовым идентификатором подготовленного ответа, срок которого составляет пять минут.
+`ig_direct_reply_prepare` создаёт одноразовую операцию и ничего не отправляет. Только отдельный вызов `ig_direct_reply_confirm` выполняет отправку. Срок действия подготовленной операции — пять минут.
 
-## Архитектура
+## Как устроено
 
 ```mermaid
 flowchart LR
-  Client["MCP client"] --> Server["mcp-insta runtime"]
-  Server --> OAuth["OAuth + PKCE callback"]
-  OAuth --> Creds["Windows Credential Manager"]
-  Server --> State["Local SQLite state"]
-  Server --> Graph["Meta Graph API"]
-  Server --> Direct["Page Messaging API"]
+  User["Пользователь"] --> Client["MCP-клиент"]
+  Client --> Runtime["mcp-insta"]
+  Runtime --> Auth["OAuth + PKCE"]
+  Auth --> Credentials["Windows Credential Manager"]
+  Runtime --> State["SQLite: IDs аккаунта и Page"]
+  Runtime --> Graph["Meta Graph API"]
+  Runtime --> Messaging["Instagram Messaging API"]
+  Runtime --> Gates["Capability gates"]
+  Gates --> Reads["Профиль, медиа, аналитика, Direct"]
+  Runtime --> Prepare["Подготовка ответа"]
+  Prepare --> Confirm["Явное подтверждение"]
 ```
 
 Расширенная схема: [docs/architecture/project-graph.mmd](docs/architecture/project-graph.mmd).
 
-## Установка
+<details>
+<summary>Структура проекта</summary>
 
-Требуется Windows и Node.js 22.5 или новее.
+```text
+.
+├── docs/                  # настройка Meta, Windows и матрица возможностей
+├── scripts/               # сборка и подготовка пакета
+├── src/
+│   ├── auth/              # OAuth + PKCE и выбор Page → Instagram
+│   ├── direct/            # ссылки и Direct workflow
+│   ├── meta/              # Graph и Page Messaging клиенты
+│   ├── secrets/           # Windows Credential Manager
+│   ├── storage/           # локальная SQLite-привязка
+│   └── tools/             # MCP-инструменты
+└── tests/                 # unit и интеграционные проверки
+```
+</details>
+
+## Быстрый старт
+
+Нужны Windows и Node.js 22.5 или новее.
 
 ```powershell
 npm ci
 npm run build
 ```
 
-Подключите собранный сервер в конфигурации MCP-клиента:
+Добавьте собранный сервер в конфигурацию MCP-клиента:
 
 ```json
 {
@@ -53,36 +76,49 @@ npm run build
 }
 ```
 
-## Конфигурация и OAuth
+## Настройка Meta и подключение
 
-1. Создайте Meta App с Facebook Login for Business и профессиональный Instagram аккаунт, связанный с отдельной Facebook Page.
-2. Добавьте redirect URI `http://localhost:8787/callback`.
-3. В Windows Credential Manager создайте generic credentials `mcp-insta/app-id` и `mcp-insta/app-secret`.
-4. В MCP-клиенте выполните `insta_auth_start`, завершите OAuth в браузере, затем вызовите `insta_auth_complete`.
-5. Запустите `insta_diagnose`. Он открывает capability gates только после успешных проверок API.
+1. Создайте Meta App с Facebook Login for Business.
+2. Свяжите профессиональный Instagram Creator/Business аккаунт с отдельной Facebook Page.
+3. Добавьте redirect URI `http://localhost:8787/callback`.
+4. В Windows Credential Manager создайте generic credentials `mcp-insta/app-id` и `mcp-insta/app-secret`.
+5. Вызовите `insta_auth_start`, завершите OAuth в браузере, затем вызовите `insta_auth_complete`.
+6. Запустите `insta_diagnose`: он открывает каждую возможность только после успешной API-проверки именно этой связки аккаунтов.
 
-Не помещайте токены, секреты, пароль или cookie в `.env`, конфигурацию MCP, логи или чат. `.env.example` содержит только безопасный пример версии API.
+Полная инструкция: [настройка Windows](docs/setup-windows.md), [настройка Meta](docs/meta-setup.md), [матрица возможностей](docs/compatibility-matrix.md).
 
-Подробности: [настройка Windows](docs/setup-windows.md), [настройка Meta](docs/meta-setup.md), [матрица возможностей](docs/compatibility-matrix.md).
+## Границы безопасности
 
-## Проверки
+- App ID, App Secret и access token не попадают в `.env`, SQLite, логи или ответы MCP.
+- Cookie и тексты Direct не сохраняются локально.
+- OAuth закрепляет ровно одну выбранную связку Page → Instagram; неоднозначный результат отклоняется.
+- Ошибки очищаются от токенов и параметров URL.
+- Перед Graph-запросами проверяются capability gates, формат ID и совместимость метрик с endpoint.
+- Подтверждение Direct-ответа — единственная исходящая операция. Публикация, отправка сообщений одним вызовом и модерация комментариев не реализованы.
+
+## Превью
+
+![Концептуальная схема: AI-клиент, защищённый MCP-шлюз с явным подтверждением и один профессиональный аккаунт](docs/assets/preview.png)
+
+Иллюстрация показывает модель безопасности сервера: чтение профиля, медиа, аналитики и Direct проходит через локальный MCP-шлюз, а единственный исходящий Direct-ответ отделён явным подтверждением.
+
+## Проверка
 
 ```powershell
 npm run check
 npm pack --dry-run --json
 ```
 
-Тесты покрывают OAuth с PKCE, привязку Page → Instagram, хранение секретов, capability gates, протокол MCP, редактирование ошибок, Graph read API, pagination и контракт Direct `prepare → confirm`.
+Набор тестов проверяет OAuth с PKCE, привязку Page → Instagram, хранение и редактирование секретов, capability gates, MCP-протокол, безопасные ошибки, Graph read API, пагинацию, аналитику и контракт Direct `prepare → confirm`.
 
-## Tags / Keywords
+## Документация
 
-`mcp` · `model-context-protocol` · `instagram` · `meta-graph-api` · `oauth2` · `typescript` · `windows`
+- [Технический аудит](AUDIT.md)
+- [Приёмка первого релиза](docs/first-release-acceptance.md)
+- [Настройка Windows](docs/setup-windows.md)
+- [Настройка Meta](docs/meta-setup.md)
+- [Матрица совместимости](docs/compatibility-matrix.md)
 
-<details>
-<summary>Project Evolution</summary>
+## Лицензия
 
-| Version | Date | Key changes |
-| --- | --- | --- |
-| 2.0.2 | 2026-07-19 | Подготовка независимого публичного репозитория: безопасный OAuth, read API, Direct с явным подтверждением и удаление неиспользуемого legacy-кода. |
-
-</details>
+[MIT](LICENSE)
