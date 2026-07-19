@@ -1,0 +1,2 @@
+export interface SafeLink { url: string; domain: string; markdown: string; warning?: string; }
+export function extractLinks(text: string): SafeLink[] { return [...text.matchAll(/https?:\/\/[^\s<>()]+/gi)].flatMap((m) => { try { const url = new URL(m[0]); return [{ url: url.toString(), domain: url.hostname, markdown: `[${url.hostname}](${url.toString()})`, warning: url.protocol === "http:" ? "Ссылка использует небезопасный http." : undefined }]; } catch { return []; } }); }

@@ -1,0 +1,12 @@
+flowchart LR
+  User["User"] --> Client["MCP client"]
+  Client --> Runtime["insta runtime"]
+  Runtime --> Auth["OAuth PKCE callback"]
+  Auth --> CredentialManager["Windows Credential Manager"]
+  Runtime --> LocalState["SQLite: account and Page IDs"]
+  Runtime --> Graph["Meta Graph API"]
+  Runtime --> Messaging["Instagram Messaging API"]
+  Runtime --> Gates["Capability registry"]
+  Gates --> Reads["Profile, media, analytics and Direct reads"]
+  Runtime --> Prepare["Direct reply preparation"]
+  Prepare --> Confirm["Explicit reply confirmation"]

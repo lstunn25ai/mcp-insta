@@ -1,0 +1,18 @@
+# mcp-insta
+
+Local Windows MCP server for one Instagram professional account.
+
+## Safety model
+
+- Secrets and tokens are stored only in Windows Credential Manager.
+- Profile, media, analytics and Direct reads require a successful capability diagnostic.
+- A Direct reply is always two-step: `ig_direct_reply_prepare`, then explicit `ig_direct_reply_confirm`.
+- Comments, publishing, Threads and webhooks are unavailable.
+
+## Local run
+
+```sh
+npm ci
+npm run build
+node dist/index.js
+```

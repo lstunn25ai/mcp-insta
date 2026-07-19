@@ -1,0 +1,35 @@
+{
+  "name": "mcp-insta",
+  "version": "2.0.2",
+  "mcpName": "insta",
+  "description": "Local Windows MCP server for one Instagram professional account",
+  "type": "module",
+  "bin": { "insta": "dist/index.js" },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "files": [
+    "dist/**/*",
+    "LICENSE",
+    "AUDIT.md",
+    "README.md",
+    "docs/setup-windows.md",
+    "docs/meta-setup.md",
+    "docs/compatibility-matrix.md"
+  ],
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "build": "node scripts/clean-dist.mjs && tsc && node scripts/copy-migrations.mjs",
+    "prepack": "npm run build",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/core tests/storage tests/secrets tests/auth tests/tools",
+    "test:integration": "vitest run tests/integration",
+    "check": "npm.cmd run build && npm.cmd run test",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": ["mcp", "instagram", "meta-graph-api", "model-context-protocol", "oauth2", "typescript", "windows"],
+  "license": "MIT",
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.26.0", "zod": "^3.24.2" },
+  "devDependencies": { "@types/node": "^22.0.0", "tsx": "^4.21.0", "typescript": "^5.7.0", "vitest": "^3.2.4" }
+}
