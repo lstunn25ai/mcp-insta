@@ -68,7 +68,7 @@ export class InstagramLogin {
     url.searchParams.set("client_id", appId);
     url.searchParams.set("redirect_uri", this.callback);
     url.searchParams.set("response_type", "code");
-    url.searchParams.set("scope", "instagram_basic,instagram_manage_insights,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement,pages_manage_metadata");
+    url.searchParams.set("scope", "instagram_basic,instagram_manage_insights,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement");
     url.searchParams.set("state", this.state);
     url.searchParams.set("code_challenge", challenge);
     url.searchParams.set("code_challenge_method", "S256");

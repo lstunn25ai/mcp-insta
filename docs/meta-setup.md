@@ -12,9 +12,10 @@ OAuth запрашивает только следующие права:
 - `instagram_manage_messages`
 - `pages_show_list`
 - `pages_read_engagement`
-- `pages_manage_metadata`
 
 После callback сервер получает список доступных Pages и сохраняет привязку только если находит ровно один связанный профессиональный Instagram аккаунт, совпадающий с необязательным `expected_instagram_username`.
+
+`pages_manage_metadata` не передаётся в OAuth scope этого Facebook Login flow: если Messaging-контур Meta требует его, доступ и Page subscription настраиваются отдельно в Meta App Dashboard после проверки требований платформы.
 
 ## Хранение данных
 
