@@ -9,12 +9,13 @@ function toolServer() {
   return { handlers, tool: (name: string, _description: string, _schema: unknown, handler: Handler) => handlers.set(name, handler) };
 }
 function result(value: Awaited<ReturnType<Handler>>) { return JSON.parse(value.content[0].text); }
-function register(options: { binding?: { accountId: string; accountType: string }; token?: string; get?: ReturnType<typeof vi.fn>; login?: { start: ReturnType<typeof vi.fn>; complete: ReturnType<typeof vi.fn> } } = {}) {
+function register(options: { binding?: { accountId: string; accountType: string }; token?: string; get?: ReturnType<typeof vi.fn>; listConversations?: ReturnType<typeof vi.fn>; login?: { start: ReturnType<typeof vi.fn>; complete: ReturnType<typeof vi.fn> } } = {}) {
   const server = toolServer(); const capabilities = new CapabilityRegistry();
   const secrets = { get: vi.fn(async () => options.token), set: vi.fn(), remove: vi.fn() };
   const client = { accountBinding: vi.fn(async () => options.binding), get: options.get ?? vi.fn(async () => ({ data: {}, rate_limit: undefined })) };
-  registerConnectionTools(server as never, secrets, client as never, capabilities, {} as never, options.login as never);
-  return { server, capabilities, secrets, client };
+  const direct = { listConversations: options.listConversations ?? vi.fn(async () => ({ data: [] })) };
+  registerConnectionTools(server as never, secrets, client as never, direct as never, capabilities, {} as never, options.login as never);
+  return { server, capabilities, secrets, client, direct };
 }
 
 describe("insta_diagnose", () => {
@@ -22,8 +23,8 @@ describe("insta_diagnose", () => {
     const get = vi.fn(async () => ({ data: {}, rate_limit: { call_count: 1 } }));
     const { server, capabilities } = register({ binding: { accountId: "ig-1", accountType: "professional" }, get });
     const output = result(await server.handlers.get("insta_diagnose")!({}));
-    expect(output).toMatchObject({ ok: true, status: "success", data: { profile: "supported", media: "supported", analytics: "supported", direct: "unavailable" } });
-    expect(capabilities.has("profile")).toBe(true); expect(capabilities.has("media")).toBe(true); expect(capabilities.has("analytics")).toBe(true); expect(capabilities.has("direct")).toBe(false);
+    expect(output).toMatchObject({ ok: true, status: "success", data: { profile: "supported", media: "supported", analytics: "supported", direct: "supported" } });
+    expect(capabilities.has("profile")).toBe(true); expect(capabilities.has("media")).toBe(true); expect(capabilities.has("analytics")).toBe(true); expect(capabilities.has("direct")).toBe(true);
     expect(get.mock.calls).toEqual([
       ["/me", { fields: "id,username" }], ["/me/media", { fields: "id", limit: 1 }], ["/me/insights", { metric: "views", period: "day" }],
     ]);
@@ -37,8 +38,8 @@ describe("insta_diagnose", () => {
     });
     const { server, capabilities } = register({ binding: { accountId: "ig-1", accountType: "professional" }, get });
     const output = result(await server.handlers.get("insta_diagnose")!({}));
-    expect(output).toMatchObject({ ok: true, status: "partial", data: { profile: "supported", media: "unavailable", analytics: "supported", direct: "unavailable" } });
-    expect(capabilities.has("profile")).toBe(true); expect(capabilities.has("media")).toBe(false); expect(capabilities.has("analytics")).toBe(true); expect(capabilities.has("direct")).toBe(false);
+    expect(output).toMatchObject({ ok: true, status: "partial", data: { profile: "supported", media: "unavailable", analytics: "supported", direct: "supported" } });
+    expect(capabilities.has("profile")).toBe(true); expect(capabilities.has("media")).toBe(false); expect(capabilities.has("analytics")).toBe(true); expect(capabilities.has("direct")).toBe(true);
     expect(get).toHaveBeenCalledWith("/me/insights", { metric: "follower_count", period: "day" });
   });
 
@@ -49,7 +50,7 @@ describe("insta_diagnose", () => {
     });
     const { server, capabilities } = register({ binding: { accountId: "ig-1", accountType: "professional" }, get });
     const output = result(await server.handlers.get("insta_diagnose")!({}));
-    expect(output).toMatchObject({ ok: true, status: "partial", data: { analytics: "unavailable", direct: "unavailable" } });
+    expect(output).toMatchObject({ ok: true, status: "partial", data: { analytics: "unavailable", direct: "supported" } });
     expect(get).toHaveBeenCalledWith("/me/insights", { metric: "views", period: "day" });
     expect(get).not.toHaveBeenCalledWith("/me/insights", { metric: "follower_count", period: "day" });
     expect(capabilities.has("analytics")).toBe(false);
@@ -80,6 +81,13 @@ describe("insta_diagnose", () => {
     const output = result(await server.handlers.get("insta_diagnose")!({}));
     expect(output).toMatchObject({ ok: false, status: "error", error: { code: "DIAGNOSTICS_FAILED" } });
     expect(capabilities.has("profile")).toBe(false);
+  });
+
+  it("оставляет Direct закрытым, если чтение диалогов отклонено Meta", async () => {
+    const setup = register({ binding: { accountId: "ig-1", accountType: "professional" }, listConversations: vi.fn(async () => { throw new Error("messaging permission denied"); }) });
+    const output = result(await setup.server.handlers.get("insta_diagnose")!({}));
+    expect(output).toMatchObject({ ok: true, status: "partial", data: { direct: "unavailable" } });
+    expect(setup.capabilities.has("direct")).toBe(false);
   });
 });
 

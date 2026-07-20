@@ -12,6 +12,7 @@ OAuth запрашивает только следующие права:
 - `instagram_manage_messages`
 - `pages_show_list`
 - `pages_read_engagement`
+- `pages_manage_metadata`
 
 После callback сервер получает список доступных Pages и сохраняет привязку только если находит ровно один связанный профессиональный Instagram аккаунт, совпадающий с необязательным `expected_instagram_username`.
 

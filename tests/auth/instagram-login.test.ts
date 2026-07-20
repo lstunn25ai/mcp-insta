@@ -65,7 +65,7 @@ describe("InstagramLogin", () => {
     expect(authorization.searchParams.get("code_challenge_method")).toBe("S256");
     expect(authorization.searchParams.get("client_id")).toBe("app-id");
     expect(authorization.searchParams.get("response_type")).toBe("code");
-    expect(new Set(authorization.searchParams.get("scope")?.split(","))).toEqual(new Set(["instagram_basic", "instagram_manage_insights", "instagram_manage_comments", "instagram_manage_messages", "pages_show_list", "pages_read_engagement"]));
+    expect(new Set(authorization.searchParams.get("scope")?.split(","))).toEqual(new Set(["instagram_basic", "instagram_manage_insights", "instagram_manage_comments", "instagram_manage_messages", "pages_show_list", "pages_read_engagement", "pages_manage_metadata"]));
 
     const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
       if (String(input).includes("/oauth/access_token")) {

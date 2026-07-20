@@ -8,9 +8,10 @@ import type { InstagramClient } from "../meta/client.js";
 import { MetaApiError } from "../meta/client.js";
 import type { CapabilityRegistry } from "../core/capabilities.js";
 import type { LocalState } from "../storage/database.js";
+import type { PageMessagingClient } from "../meta/messaging.js";
 
 type LoginFlow = Pick<InstagramLogin, "start" | "complete">;
-export function registerConnectionTools(server: McpServer, secrets: SecretStore, client: InstagramClient, capabilities: CapabilityRegistry, state: LocalState, injectedLogin?: LoginFlow) {
+export function registerConnectionTools(server: McpServer, secrets: SecretStore, client: InstagramClient, directClient: Pick<PageMessagingClient, "listConversations">, capabilities: CapabilityRegistry, state: LocalState, injectedLogin?: LoginFlow) {
   const login = injectedLogin ?? new InstagramLogin(secrets, state);
   server.tool("insta_auth_start", "Начать Facebook Login для заранее выбранной отдельной Facebook Page. OAuth не запускается сам по себе.", { page_id: z.string().min(1).optional(), expected_instagram_username: z.string().min(1).optional() }, async ({ page_id, expected_instagram_username }) => {
     try { return asMcpResult(success(await login.start(page_id, expected_instagram_username), "auth")); }
@@ -41,9 +42,10 @@ export function registerConnectionTools(server: McpServer, secrets: SecretStore,
         try { await client.get("/me/insights", probe); capabilities.enable("analytics"); analytics = "supported"; break; }
         catch (error) { if (error instanceof MetaApiError && error.retryable) break; /* Try the next valid account-level metric. */ }
       }
-      const direct = "unavailable" as const;
+      let direct: "supported" | "unavailable" = "unavailable";
+      try { await directClient.listConversations(1); capabilities.enable("direct"); direct = "supported"; } catch { /* Keep the gate closed. */ }
       const data = { profile: "supported" as const, media, analytics, direct, comments: "unavailable" as const, stories: "unavailable" as const };
-      return asMcpResult(media === "supported" && analytics === "supported" ? success(data, "diagnostics") : partial(data, "diagnostics"));
+      return asMcpResult(media === "supported" && analytics === "supported" && direct === "supported" ? success(data, "diagnostics") : partial(data, "diagnostics"));
     } catch (e) { return asMcpResult(failure(e instanceof Error ? e.message : "Диагностика не выполнена.", "DIAGNOSTICS_FAILED")); }
   });
 }

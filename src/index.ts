@@ -26,7 +26,7 @@ export function createProductionDeps(): RuntimeDeps {
   return { secrets, state, api: new InstagramClient(secrets, state), direct: new PageMessagingClient(secrets, state), capabilities: new CapabilityRegistry(), login: new InstagramLogin(secrets, state) };
 }
 export function registerTools(server: McpServer, deps: RuntimeDeps) {
-  registerConnectionTools(server, deps.secrets, deps.api, deps.capabilities, deps.state, deps.login);
+  registerConnectionTools(server, deps.secrets, deps.api, deps.direct, deps.capabilities, deps.state, deps.login);
   registerProfileTools(server, deps.api, deps.capabilities); registerMediaTools(server, deps.api, deps.capabilities); registerAnalyticsTools(server, deps.api, deps.capabilities); registerDirectTools(server, deps.direct); registerCommentTools(server);
 }
 export function createRuntime(deps: RuntimeDeps = createProductionDeps()) {
