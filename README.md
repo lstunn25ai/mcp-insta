@@ -100,7 +100,7 @@ npm run build
 
 ![Концептуальная схема: AI-клиент, защищённый MCP-шлюз с явным подтверждением и один профессиональный аккаунт](docs/assets/preview.png)
 
-Иллюстрация показывает модель безопасности сервера: чтение профиля, медиа, аналитики и Direct проходит через локальный MCP-шлюз, а единственный исходящий Direct-ответ отделён явным подтверждением.
+> Один Instagram-аккаунт, проверенные данные, ответ только после подтверждения.
 
 ## Проверка
 
@@ -122,3 +122,10 @@ npm pack --dry-run --json
 ## Лицензия
 
 [MIT](LICENSE)
+
+<details>
+<summary>История версий README</summary>
+
+- 2026-07-20 · `07b8e7d` · `docs: redesign README with verified preview` · [Открыть редакцию](https://github.com/lstunn25ai/mcp-insta/blob/07b8e7d68cb0a9e5d9e15b6779bc7cedf5d92b0f/README.md)
+- 2026-07-20 · `f600005` · `feat: establish secure Instagram MCP` · [Открыть редакцию](https://github.com/lstunn25ai/mcp-insta/blob/f60000576125de21260d869fda86902b9101a5f0/README.md)
+</details>
