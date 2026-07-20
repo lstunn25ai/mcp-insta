@@ -100,7 +100,7 @@ npm run build
 
 ![Концептуальная схема: AI-клиент, защищённый MCP-шлюз с явным подтверждением и один профессиональный аккаунт](docs/assets/preview.png)
 
-> Один Instagram-аккаунт, проверенные данные, ответ только после подтверждения.
+> Собирает важное из Instagram, чтобы слышать аудиторию внимательнее.
 
 ## Проверка
 
@@ -126,6 +126,7 @@ npm pack --dry-run --json
 <details>
 <summary>История версий README</summary>
 
+- 2026-07-20 · `28d951c` · `docs: add README history and project slogan` · [Открыть редакцию](https://github.com/lstunn25ai/mcp-insta/blob/28d951cb7ebcc886cb24c9f1ce01505a838740a6/README.md)
 - 2026-07-20 · `07b8e7d` · `docs: redesign README with verified preview` · [Открыть редакцию](https://github.com/lstunn25ai/mcp-insta/blob/07b8e7d68cb0a9e5d9e15b6779bc7cedf5d92b0f/README.md)
 - 2026-07-20 · `f600005` · `feat: establish secure Instagram MCP` · [Открыть редакцию](https://github.com/lstunn25ai/mcp-insta/blob/f60000576125de21260d869fda86902b9101a5f0/README.md)
 </details>
